@@ -16,18 +16,101 @@ It is dense, not terse: it removes fluff but keeps the substance you need to und
 
 ## Before / after
 
-Without:
+Same prompt, same model (DeepSeek V4.1 Flash). Both replies shown in full.
 
-> Great question! Let me walk you through what's happening here. First, I'll take a look at your `auth.js` file... The issue is that the token expiry check is comparing in the wrong direction, which means tokens are being rejected while they are still valid. I've gone ahead and updated the function for you. Here's a summary of the changes I made: I changed the operator on line 42. I hope this helps! Let me know if you'd like me to explain anything further.
+**Prompt**
 
-With:
+```text
+Task: add a retry with exponential backoff to this function.
 
-> The expiry check uses `<` instead of `>`, so valid tokens are rejected.
->
-> ```diff
-> - if (Date.now() < token.expiresAt) return null;
-> + if (Date.now() > token.expiresAt) return null;
-> ```
+async function fetchWithTimeout(url, ms) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+Plan first, then show the updated function and the key change.
+```
+
+<details>
+<summary><strong>Without to-the-point</strong> — 389 words</summary>
+
+Great question! Let me walk you through adding retry with exponential backoff to your `fetchWithTimeout` function.
+
+First, a quick bit of context: exponential backoff is a standard resilience pattern where each retry waits longer than the last. It's commonly used when talking to flaky networks or rate-limited APIs, because hammering a failing service with immediate retries usually makes things worse.
+
+Before I show the code, here's the plan I'd suggest:
+
+1. Add optional `retries` and `baseDelay` parameters so callers can tune the behavior.
+2. Wrap the request in a loop so it can be attempted more than once.
+3. On failure, wait for an increasing delay before the next attempt.
+4. Throw the last error once retries are exhausted.
+
+There are a few design decisions worth calling out. You could retry every error, or only retryable ones like timeouts, 5xx, and 429s. You could add jitter to avoid thundering-herd problems. You could also cap the delay with a `maxDelay`. I'll include the first two since they're the most important.
+
+Here's the updated function:
+
+```js
+async function fetchWithTimeout(url, ms, { retries = 3, baseDelay = 300 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(url, { signal: controller.signal });
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      const delay = baseDelay * 2 ** attempt + Math.random() * 100;
+      await new Promise((r) => setTimeout(r, delay));
+    } finally {
+      clearTimeout(id);
+    }
+  }
+}
+```
+
+Let me explain what changed and why:
+
+- The `for` loop retries the whole request instead of failing immediately.
+- The `AbortController` and timer are now created inside the loop, which is important. If you reused a single controller, the first timeout would abort it permanently and every retry would fail instantly.
+- The delay is `baseDelay * 2 ** attempt` (300ms, 600ms, 1200ms, and so on) with a little random jitter so multiple clients don't retry in lockstep.
+
+A couple of final notes: this will retry non-idempotent requests like POSTs too, so if that matters you should gate retries on the HTTP method. You might also want a `maxDelay` cap for large retry counts.
+
+I hope this helps! Let me know if you'd like a version with a `maxDelay`, retryable-status checks, or TypeScript types.
+
+</details>
+
+**With to-the-point** — 153 words
+
+Plan:
+1. Add `retries` and `baseDelay` options.
+2. Loop attempts, with a fresh `AbortController` and timer per attempt.
+3. Back off `baseDelay * 2**attempt` plus jitter; throw after the last attempt.
+
+```js
+async function fetchWithTimeout(url, ms, { retries = 3, baseDelay = 300 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(url, { signal: controller.signal });
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise((r) => setTimeout(r, baseDelay * 2 ** attempt + Math.random() * 100));
+    } finally {
+      clearTimeout(id);
+    }
+  }
+}
+```
+
+Key change: the controller and timer are scoped inside the loop, so each retry gets a clean signal and a full timeout. Hoisting them out would leave every retry using an already-aborted signal.
+
+Caveat: this retries POSTs too; gate on idempotent methods if that matters.
 
 In plan mode, the plan itself is kept: goal, approach, files, tradeoffs, risks, and open questions, then you approve before any code is written.
 
@@ -38,13 +121,13 @@ In plan mode, the plan itself is kept: goal, approach, files, tradeoffs, risks, 
 Works with Claude Code, Cursor, Codex, Copilot / VS Code, opencode, Gemini CLI, Windsurf, and other agents that read `SKILL.md`.
 
 ```bash
-npx skills add balewgize/to-the-point
+pnpx skills add https://github.com/balewgize/to-the-point
 ```
 
 Install globally so it is on by default in every project:
 
 ```bash
-npx skills add balewgize/to-the-point -g
+pnpx skills add https://github.com/balewgize/to-the-point -g
 ```
 
 Restart your chat session after installing so the agent discovers the skill.
@@ -92,7 +175,7 @@ When off, the agent writes normally but still skips filler. Explicit format requ
 
 | Platform | How to use |
 | --- | --- |
-| Claude Code / Cursor / Codex / Copilot / opencode / Gemini CLI / Windsurf | `npx skills add balewgize/to-the-point` |
+| Claude Code / Cursor / Codex / OpenCode / Copilot / Gemini CLI / Windsurf | `pnpx skills add https://github.com/balewgize/to-the-point` |
 | ChatGPT / Claude / Gemini web | Paste the prompt above into Custom Instructions |
 | Any other LLM | Paste the prompt above into the system prompt |
 
