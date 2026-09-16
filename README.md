@@ -2,16 +2,47 @@
 
 **Read less. Do more.**
 
+[![skills.sh](https://skills.sh/b/balewgize/to-the-point)](https://skills.sh/balewgize/to-the-point)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
+
 Coding agents still use way too many words. `to-the-point` strips the filler so you get the plan, the answer, and the code without the preamble.
 
-It is dense, not terse: it removes fluff but keeps the substance you need to understand and approve what is happening.
+It's dense, not terse: the fluff goes, the substance stays. Works in coding chats and normal chats, and it's easy to turn off.
+
+## Install
+
+Works with Claude Code, Codex, Cursor, Copilot, opencode, Gemini CLI, Windsurf, and any other agent that reads `SKILL.md`.
+
+```bash
+npx skills add balewgize/to-the-point -g
+```
+
+`-g` installs it globally, so it's available (and on by default) in every project. Leave off `-g` to install it in the current project only. Restart your chat session once so the agent finds it.
+
+Using pnpm or bun? `pnpx` and `bunx` work the same way.
+
+### Web chats
+
+ChatGPT, Claude, and Gemini can't load skills. Paste this into Custom Instructions or the system prompt:
+
+```text
+Be dense, not verbose. Lead with the answer, result, code, or plan. Use short,
+natural English and stop when done. Cut filler, pleasantries, hedging, process
+narration, restating my request, and unsolicited summaries. On coding tasks,
+give a compact plan before code when planning, and lead with the code or diff
+when building. Never cut accuracy, errors, security and correctness warnings,
+destructive-action warnings, uncertainty, or safety notes. When I say "normal
+mode", "be detailed", "verbose", "full explanation", or "turn off to-the-point",
+write normally for the rest of the chat but still skip filler. When I say
+"to-the-point" or "concise mode", resume. No emojis unless I ask.
+```
 
 ## What it does
 
 - Leads with the answer, the plan, or the code
-- Keeps a compact, readable plan before code in plan mode
-- Removes filler, hedging, process narration, and trailing recaps
-- Stays natural English, not broken "caveman" style
+- Keeps a short, readable plan before code in plan mode
+- Removes filler, hedging, and "let me walk you through" narration
+- Stays natural English, not caveman speak
 - Never drops errors, warnings, or safety notes
 
 ## Before / after
@@ -114,68 +145,25 @@ Caveat: this retries POSTs too; gate on idempotent methods if that matters.
 
 In plan mode, the plan itself is kept: goal, approach, files, tradeoffs, risks, and open questions, then you approve before any code is written.
 
-## Install
-
-### Coding agents
-
-Works with Claude Code, Cursor, Codex, Copilot / VS Code, opencode, Gemini CLI, Windsurf, and other agents that read `SKILL.md`.
-
-```bash
-pnpx skills add https://github.com/balewgize/to-the-point
-```
-
-Install globally so it is on by default in every project:
-
-```bash
-pnpx skills add https://github.com/balewgize/to-the-point -g
-```
-
-Restart your chat session after installing so the agent discovers the skill.
-
-### Web chats and any LLM
-
-Web chats (ChatGPT, Claude, Gemini, and similar) do not load skills. Paste this into Custom Instructions, a project prompt, or the system prompt:
-
-```text
-Be dense, not verbose. Lead with the answer, result, code, or plan. Use short,
-natural English and stop when done. Cut filler, pleasantries, hedging, process
-narration, restating my request, and unsolicited summaries. On coding tasks,
-give a compact plan before code when planning, and lead with the code or diff
-when building. Never cut accuracy, errors, security and correctness warnings,
-destructive-action warnings, uncertainty, or safety notes. When I say "normal
-mode", "be detailed", "verbose", "full explanation", or "turn off to-the-point",
-write normally for the rest of the chat but still skip filler. When I say
-"to-the-point" or "concise mode", resume. No emojis unless I ask.
-```
-
-## On by default
-
-A skill's `description` is always loaded into the agent's context, so `to-the-point` applies automatically once installed. You do not need to invoke it.
-
-In some agents, skill activation is model-gated. If it does not kick in, say `to-the-point` once and it stays active for the session.
-
 ## Turn off and on
 
-Turn off for the rest of the conversation:
+Turn off for the rest of the chat: `normal mode`, `be detailed`, `verbose`, `full explanation`, `turn off to-the-point`.
 
-- `normal mode`
-- `be detailed`
-- `verbose`
-- `full explanation`
-- `turn off to-the-point`
+Turn it back on: `to-the-point`, `concise mode`.
 
-Turn back on:
+When it's off, the agent writes normally but still skips filler. Explicit format requests always win.
 
-- `to-the-point`
-- `concise mode`
+## How it works
 
-When off, the agent writes normally but still skips filler. Explicit format requests always win.
+A skill's `description` is always loaded into the agent's context, so `to-the-point` applies on its own once installed. You don't have to invoke it.
+
+Some agents are model-gated. If it doesn't kick in, say `to-the-point` once and it stays on for the session.
 
 ## Compatibility
 
 | Platform | How to use |
 | --- | --- |
-| Claude Code / Cursor / Codex / OpenCode / Copilot / Gemini CLI / Windsurf | `pnpx skills add https://github.com/balewgize/to-the-point` |
+| Claude Code / Cursor / Codex / OpenCode / Copilot / Gemini CLI / Windsurf | `npx skills add balewgize/to-the-point -g` |
 | ChatGPT / Claude / Gemini web | Paste the prompt above into Custom Instructions |
 | Any other LLM | Paste the prompt above into the system prompt |
 
